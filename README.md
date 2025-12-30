@@ -40,7 +40,7 @@ A final check is performed on stationary data to verify if the control series ca
 
 ### 4. Analysis & Results
 *   **Selection Matrix:** A matrix displaying Raw/Transformed correlations, Granger p-values, and Variance Ratios for all candidates.
-*   **Visualizations:** Side-by-side plots with status icons (✅ PASS, 🆗 ELIGIBLE, ⚠️ VOLATILE, 📉 TIER 2, ❌ FAILED).
+*   **Visualizations:** Side-by-side plots with status labels (PASS, ELIGIBLE, VOLATILE, TIER 2, FAILED).
 *   **Causal Model:** The `pycausalimpact` model is run using the **Raw Data** of the selected best controls to estimate the intervention effect.
 
 ---
