@@ -32,11 +32,11 @@ Implement `select_best_controls(df, target, pre_beg, pre_end)` using a **Tiered 
 ## Step 4: Analysis & Final Polish
 - **Selection Matrix:** Display a dataframe with Raw vs. Transformed correlations, Granger p-values, Variance Ratios, and selection status.
 - **Visualization:** Create a side-by-side bar plot with clear **Status Icons**:
-    - ✅ **PASS (All Tests)**
-    - 🆗 **ELIGIBLE (No Granger)**
-    - ⚠️ **VOLATILE (Failed Var)**
-    - 📉 **TIER 2 (Weak Match)**
-    - ❌ **FAILED**
+    -  **PASS (All Tests)**
+    -  **ELIGIBLE (No Granger)**
+    -  **VOLATILE (Failed Var)**
+    -  **TIER 2 (Weak Match)**
+    -  **FAILED**
 - **Causal Model:** Run `pycausalimpact` using the **Raw Data** for selected controls.
 - **Documentation:** Add a detailed markdown introduction explaining the rationale behind each test:
     - **Stationarity:** The "Rainy Tuesday" test (Behavioral Shocks).
