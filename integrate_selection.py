@@ -51,8 +51,10 @@ helper_funcs = [
 
 senior_selection_func = [
     "def select_best_controls(df_full, target, pre_beg, pre_end, t1_thresh=0.8, t2_thresh=0.6):\n",
-    "    \"\"\"SENIOR SELECTION: Multi-metric ranking using Correlation, LASSO, DTW, and Mutual Information.\"\"\"\n",
+    "    \"\"\"SENIOR SELECTION: Multi-metric ranking using Correlation, LASSO, DTW, Mutual Info, and Granger Causality.\"\"\"\n",
     "    import pandas as pd\n",
+    "    import numpy as np\n",
+    "    from statsmodels.tsa.stattools import grangercausalitytests\n",
     "    df_pre = df_full.loc[pre_beg:pre_end]\n",
     "    potential_controls = [c for c in df_full.columns if c != target]\n",
     "    \n",
@@ -67,20 +69,33 @@ senior_selection_func = [
     "        \n",
     "        corr_trans = 0\n",
     "        var_ratio = 0\n",
+    "        granger_p = 1.0\n",
+    "        \n",
     "        if step_name:\n",
     "            s_city_trans = transform_func(df_pre[city]).dropna()\n",
     "            s_target_trans = transform_func(df_pre[target]).dropna()\n",
     "            joined = pd.concat([s_city_trans, s_target_trans], axis=1).dropna()\n",
+    "            joined.columns = [city, target]\n",
     "            corr_trans = joined.iloc[:, 0].corr(joined.iloc[:, 1])\n",
     "            var_ratio = s_city_trans.std() / s_target_trans.std() if s_target_trans.std() != 0 else 0\n",
+    "            \n",
+    "            # Granger Causality Test\n",
+    "            try:\n",
+    "                # Test if city causes target\n",
+    "                granger_result = grangercausalitytests(joined[[target, city]], maxlag=2, verbose=False)\n",
+    "                # p-value of the F-test for lag 1\n",
+    "                granger_p = granger_result[1][0]['params_ftest'][1]\n",
+    "            except: pass\n",
     "        \n",
     "        dtw_dist = calculate_dtw_distance(df_pre[target], df_pre[city])\n",
     "        mi_score = get_mutual_info(df_pre[city], df_pre[target])\n",
     "        lasso_w = lasso_weights.get(city, 0.0)\n",
     "        \n",
+    "        # Tiering Logic refined with Granger and Variance\n",
     "        tier = \"None\"\n",
     "        if corr_trans > t1_thresh and 0.5 < var_ratio < 2.0:\n",
-    "            if lasso_w > 0 or mi_score > 0.6:\n",
+    "            # Elite if predictive (Granger) OR strong ML evidence (LASSO + MI)\n",
+    "            if granger_p < 0.05 or (lasso_w > 0 and mi_score > 0.6):\n",
     "                tier = \"Tier 1 (Elite)\"\n",
     "            else:\n",
     "                tier = \"Tier 2 (Robust)\"\n",
@@ -91,6 +106,7 @@ senior_selection_func = [
     "            'City': city,\n",
     "            'Corr_Transformed': corr_trans,\n",
     "            'Variance_Ratio': var_ratio,\n",
+    "            'Granger_p': granger_p,\n",
     "            'DTW_Distance': dtw_dist,\n",
     "            'Mutual_Info': mi_score,\n",
     "            'LASSO_Weight': lasso_w,\n",
@@ -149,11 +165,11 @@ for cell in nb['cells']:
         cell['execution_count'] = None
     new_cells.append(cell)
 
-# Re-insert Senior Selection block at the right place (index 1 is usually imports)
+# Re-insert Senior Selection block at the right place
 selection_cell = {
     "cell_type": "code",
     "execution_count": None,
-    "id": "senior_selection_core",
+    "id": "senior_selection_final_v3",
     "metadata": {},
     "outputs": [],
     "source": helper_funcs + ["\n"] + senior_selection_func
@@ -161,9 +177,9 @@ selection_cell = {
 new_cells.insert(2, selection_cell)
 
 # Re-insert Power Analysis section at the end
-new_cells.append({"cell_type": "markdown", "id": "mde_header", "metadata": {}, "source": ["## experiment Design: Power & Volume Analysis"]})
-new_cells.append({"cell_type": "code", "execution_count": None, "id": "power_funcs_core", "metadata": {}, "outputs": [], "source": power_funcs})
-new_cells.append({"cell_type": "code", "execution_count": None, "id": "power_demo_cell_final", "metadata": {}, "outputs": [], "source": [
+new_cells.append({"cell_type": "markdown", "id": "mde_header_final", "metadata": {}, "source": ["## experiment Design: Power & Volume Analysis"]})
+new_cells.append({"cell_type": "code", "execution_count": None, "id": "power_funcs_final_v3", "metadata": {}, "outputs": [], "source": power_funcs})
+new_cells.append({"cell_type": "code", "execution_count": None, "id": "power_demo_final_v3", "metadata": {}, "outputs": [], "source": [
     "target_city = 'City_1'\n",
     "matrix, best_selection, status = select_best_controls(df, target_city, pre_beg, pre_end)\n",
     "print(status)\n",
@@ -177,4 +193,4 @@ nb['cells'] = new_cells
 with open(notebook_path, 'w', encoding='utf-8') as f:
     json.dump(nb, f, indent=1)
 
-print('Robust integration of Senior Selection criteria complete.')
+print('Updated integration script with Granger and strict Variance criteria.')
